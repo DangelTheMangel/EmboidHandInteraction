@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "com.github.homuler.mediapipe": {
+      "version": "file:com.github.homuler.mediapipe",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.test-framework": "1.0.0"
+      }
+    },
     "com.unity.ai.navigation": {
       "version": "2.0.5",
       "depth": 0,
@@ -204,6 +213,13 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "com.wooshii.foldericons": {
+      "version": "https://github.com/WooshiiDev/Unity-Folder-Icons.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "4511fb04fe561618780f0b35569e92a171713e95"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
