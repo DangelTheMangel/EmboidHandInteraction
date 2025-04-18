@@ -1,3 +1,4 @@
+using System.Threading;
 using UnityEngine;
 
 public class Grabable : MonoBehaviour
@@ -8,6 +9,12 @@ public class Grabable : MonoBehaviour
     private float baseMaxLinearVelocity = 10f;
     private float baseMaxAngularVelocity = 10f;
 
+    public float scoreClock = 0f; // Clock for scoring
+    private float distanceClock = 0f; // Clock for distance calculation
+    public Transform EndPoint;
+    public float distanceToEndPoint = 0f;
+    public float distanceToEndPointThreshold = 1f; // Threshold for distance to endpoint
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -15,11 +22,14 @@ public class Grabable : MonoBehaviour
         rb.maxAngularVelocity = baseMaxAngularVelocity;
         rb.maxLinearVelocity = baseMaxLinearVelocity;
         mainCamera = Camera.main;
+        EndPoint = GameObject.FindWithTag("EndPoint").transform; // Find the endpoint object by tag
     }
 
     // Update is called once per frame
     void Update()
     {
+
+        #region Dragging
         if (Input.GetMouseButtonDown(0)) // Left mouse button pressed
         {
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -61,5 +71,31 @@ public class Grabable : MonoBehaviour
         {
             Debug.Log("Game Over: Object left the camera's bounds!");
         }
+    #endregion Dragging
+            
+    //----------------------------------------------------//
+    
+    #region Scoring
+    scoreClock += Time.deltaTime;
+
+    //Register when object close
+    if(transform.position.x < EndPoint.position.x + distanceToEndPointThreshold && transform.position.x > EndPoint.position.x - distanceToEndPointThreshold)
+    {
+        distanceClock += Time.deltaTime;
+
+        if (distanceClock >= 1f)
+        {
+            distanceToEndPoint = Vector3.Distance(transform.position, EndPoint.position);
+            // Stop the timer and calculate score
+            float score = 10 - ((scoreClock*0.7f) + (distanceToEndPoint*1.5f));
+            Debug.Log("Score: " + score);
+            Destroy(gameObject);
+        }
+    }
+    else
+    {
+        distanceClock = 0f;
+    }
+    #endregion Scoring
     }
 }
