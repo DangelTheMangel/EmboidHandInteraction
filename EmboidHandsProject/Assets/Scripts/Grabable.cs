@@ -91,11 +91,12 @@ public class Grabable : MonoBehaviour
             distanceToEndPoint = UnityEngine.Vector3.Distance(transform.position, EndPoint.position);
             // Stop the timer and calculate score
             float score = 10 - ((scoreClock*2f) + (distanceToEndPoint*1.5f));
-            Debug.Log("Score: " + score);
+            Debug.Log("Score: " + score + "\n Time taken & distance to endpoint: " + scoreClock + ", " + distanceToEndPoint);
             Boss.MoveEndPoint(new UnityEngine.Vector3(Random.Range(8,-8), 0.1f,Random.Range(5.5f,-3.5f))); // This should change to be bounds of camera
             Destroy(gameObject);
         }
     }
+    
     else
     {
         distanceClock = 0f;
