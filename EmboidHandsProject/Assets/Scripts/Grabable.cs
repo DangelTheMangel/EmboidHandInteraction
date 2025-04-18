@@ -55,7 +55,7 @@ public class Grabable : MonoBehaviour
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                UnityEngine.Vector3 targetPosition = hit.point;
+                UnityEngine.Vector3 targetPosition = new UnityEngine.Vector3(hit.point.x, 1, hit.point.z);
                 UnityEngine.Vector3 direction = targetPosition - transform.position;
 
                 // Adjust velocities based on distance
@@ -78,29 +78,34 @@ public class Grabable : MonoBehaviour
             
     //----------------------------------------------------//
     
-    #region Scoring
     scoreClock += Time.deltaTime;
+    }
 
-    //Register when object close
-    if(transform.position.x < EndPoint.position.x + distanceToEndPointThreshold && transform.position.x > EndPoint.position.x - distanceToEndPointThreshold)
+    #region Scoring
+    void OnTriggerStay(Collider other) // Check if the object is within the endpoint's trigger collider
     {
+        if(other.tag == "EndPoint")
+        {
         distanceClock += Time.deltaTime;
 
-        if (distanceClock >= 1f)
+        if (distanceClock >= 0.5f)
         {
             distanceToEndPoint = UnityEngine.Vector3.Distance(transform.position, EndPoint.position);
             // Stop the timer and calculate score
             float score = 10 - ((scoreClock*2f) + (distanceToEndPoint*1.5f));
-            Debug.Log("Score: " + score + "\n Time taken & distance to endpoint: " + scoreClock + ", " + distanceToEndPoint);
+            Debug.Log("Score: " + score + "\n Time taken, distance to endpoint: " + scoreClock + ", " + distanceToEndPoint);
             Boss.MoveEndPoint(new UnityEngine.Vector3(Random.Range(8,-8), 0.1f,Random.Range(5.5f,-3.5f))); // This should change to be bounds of camera
             Destroy(gameObject);
         }
+        }
     }
-    
-    else
+
+    void OnTriggerExit(Collider other) //reset distance clock when object leaves endpoint
     {
-        distanceClock = 0f;
+        if(other.tag == "EndPoint")
+        {
+            distanceClock = 0f;
+        }
     }
     #endregion Scoring
-    }
 }

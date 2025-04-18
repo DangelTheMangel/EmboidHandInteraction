@@ -16,10 +16,19 @@ public class Bossman : MonoBehaviour
         }
     }
 
-    public void SpawnShape()
-    {
-        GameObject.Instantiate(grabableObjects[Random.Range(0, grabableObjects.Count)], spawnPoint.transform.position, spawnPoint.transform.rotation);
-    }
+public void SpawnShape()
+{
+    GameObject newObject = GameObject.Instantiate(
+        grabableObjects[Random.Range(0, grabableObjects.Count)], 
+        spawnPoint.transform.position, 
+        spawnPoint.transform.rotation
+    );
+
+    // Set a random scale for the new object
+    float randomScale = Random.Range(0.5f, 2.0f); // Adjust the range as needed
+    newObject.transform.localScale = new Vector3(randomScale, randomScale, randomScale);
+}
+
 
     public void MoveEndPoint(UnityEngine.Vector3 newPosition)
     {
