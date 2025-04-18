@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Threading;
 using UnityEngine;
 
@@ -14,7 +15,8 @@ public class Grabable : MonoBehaviour
     public Transform EndPoint;
     public float distanceToEndPoint = 0f;
     public float distanceToEndPointThreshold = 1f; // Threshold for distance to endpoint
-
+    Bossman Boss;
+    
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -23,6 +25,7 @@ public class Grabable : MonoBehaviour
         rb.maxLinearVelocity = baseMaxLinearVelocity;
         mainCamera = Camera.main;
         EndPoint = GameObject.FindWithTag("EndPoint").transform; // Find the endpoint object by tag
+        Boss = GameObject.FindWithTag("Bossman").GetComponent<Bossman>(); // Find
     }
 
     // Update is called once per frame
@@ -52,8 +55,8 @@ public class Grabable : MonoBehaviour
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                Vector3 targetPosition = hit.point;
-                Vector3 direction = targetPosition - transform.position;
+                UnityEngine.Vector3 targetPosition = hit.point;
+                UnityEngine.Vector3 direction = targetPosition - transform.position;
 
                 // Adjust velocities based on distance
                 float distance = direction.magnitude;
@@ -66,7 +69,7 @@ public class Grabable : MonoBehaviour
         }
 
         // Check if the object is outside the camera's bounds
-        Vector3 viewportPosition = mainCamera.WorldToViewportPoint(transform.position);
+        UnityEngine.Vector3 viewportPosition = mainCamera.WorldToViewportPoint(transform.position);
         if (viewportPosition.x < 0 || viewportPosition.x > 1 || viewportPosition.y < 0 || viewportPosition.y > 1)
         {
             Debug.Log("Game Over: Object left the camera's bounds!");
@@ -85,10 +88,11 @@ public class Grabable : MonoBehaviour
 
         if (distanceClock >= 1f)
         {
-            distanceToEndPoint = Vector3.Distance(transform.position, EndPoint.position);
+            distanceToEndPoint = UnityEngine.Vector3.Distance(transform.position, EndPoint.position);
             // Stop the timer and calculate score
-            float score = 10 - ((scoreClock*0.7f) + (distanceToEndPoint*1.5f));
+            float score = 10 - ((scoreClock*2f) + (distanceToEndPoint*1.5f));
             Debug.Log("Score: " + score);
+            Boss.MoveEndPoint(new UnityEngine.Vector3(Random.Range(8,-8), 0.1f,Random.Range(5.5f,-3.5f))); // This should change to be bounds of camera
             Destroy(gameObject);
         }
     }

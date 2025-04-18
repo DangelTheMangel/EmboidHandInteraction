@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Global Resource
   - EndPoint
+  - Bossman
   layers:
   - Default
   - TransparentFX

@@ -4,15 +4,26 @@ using UnityEngine;
 public class Bossman : MonoBehaviour
 {
     public List<GameObject> grabableObjects = new List<GameObject>();
-    public Transform spawnPoint;
+    public GameObject spawnPoint;
+    public GameObject endPoint;
 
     // Update is called once per frame
     void Update()
     {
         if(Input.GetKeyDown(KeyCode.G))
         {
-            GameObject.Instantiate(grabableObjects[Random.Range(0, grabableObjects.Count)], spawnPoint.position, spawnPoint.rotation);
+            SpawnShape();
         }
+    }
+
+    public void SpawnShape()
+    {
+        GameObject.Instantiate(grabableObjects[Random.Range(0, grabableObjects.Count)], spawnPoint.transform.position, spawnPoint.transform.rotation);
+    }
+
+    public void MoveEndPoint(UnityEngine.Vector3 newPosition)
+    {
+        endPoint.transform.position = newPosition;
     }
 }
 
