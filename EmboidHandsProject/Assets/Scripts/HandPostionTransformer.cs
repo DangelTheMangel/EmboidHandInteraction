@@ -33,8 +33,8 @@ public class HandPostionTransformer : MonoBehaviour
 
                 // Convert normalized screen coordinates (-1 to 1) to viewport coordinates (0 to 1)
                 Vector3 viewportPosition = new Vector3(
-                    (wrist.x + 1) * 0.5f, 
-                    (wrist.y + 1) * 0.5f, 
+                    (wrist.x + 1) * 6f, 
+                    (wrist.y + 1) * 6f, 
                     wrist.z
                 );
 
