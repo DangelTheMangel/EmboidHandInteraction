@@ -53,6 +53,8 @@ public class HandPostionTransformer : MonoBehaviour
         {
             Debug.LogWarning("Handmodel is not assigned. Using default scale.");
         }
+
+        lastHandPosition = ConstrainToPlane(new Vector3(0.5f, 0.5f, 0.5f)); // Initialize last hand position
     }
     void Update()
     {
@@ -119,8 +121,11 @@ public class HandPostionTransformer : MonoBehaviour
             Debug.LogWarning($"Error in Update: {e.Message}");
         }
     }
-    Vector3 lastHandPosition;
+    public Vector3 lastHandPosition;
     bool startedMoving = false;
+
+    public Vector3 movementDirection = Vector3.zero; // Direction of movement
+    float movementMagnitude = 0; // Magnitude of movement
     private void moveHand()
     {
         if (!startedMoving)
@@ -132,39 +137,11 @@ public class HandPostionTransformer : MonoBehaviour
 
         // Get the new position from the landmark midpoint
         Vector3 newPosition = ConstrainToPlane(handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0].landmarks[0]);
-
-        if (useTeleport)
-        {
-            // Teleport the hand directly to the new position
-            transform.position = newPosition;
-        }
-        else
-        {
-            // Calculate the direction and distance
-            Vector3 direction = (newPosition - lastHandPosition).normalized;
-            float distance = Vector3.Distance(lastHandPosition, newPosition);
-
-            Renderer planeRenderer = movementPlaneObject.GetComponent<Renderer>();
-            if (planeRenderer != null)
-            {
-                Bounds planeBounds = planeRenderer.bounds;
-
-                // Scale movement speed based on the plane size and distance
-                float scaledSpeed = movementSpeed * (planeBounds.size.x + planeBounds.size.y) * 0.5f * distance;
-
-                // Calculate the new position with smooth movement
-                Vector3 movement = direction * scaledSpeed * Time.deltaTime;
-                Vector3 smoothPosition = transform.position + movement;
-
-                // Constrain the position within the plane bounds
-                transform.position = ConstrainToPlane(smoothPosition);
-            }
-            else
-            {
-                Debug.LogError("MovementPlaneObject does not have a Renderer component.");
-            }
-        }
-
+        Debug.ClearDeveloperConsole();
+        movementDirection= newPosition - lastHandPosition;
+        movementMagnitude = movementDirection.magnitude;
+        movementDirection.Normalize();
+        Debug.Log("New postion: " +newPosition + " Old postion: " + lastHandPosition + " Postion from mediapipe: " + handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0].landmarks[0]);
         // Update the last hand position
         lastHandPosition = newPosition;
     }
@@ -176,41 +153,27 @@ public class HandPostionTransformer : MonoBehaviour
     /// <returns>The mapped world position on the plane.</returns>
     private Vector3 ConstrainToPlane(Landmark landmark)
     {
-        Renderer planeRenderer = movementPlaneObject.GetComponent<Renderer>();
-        if (planeRenderer != null)
-        {
-            Bounds planeBounds = planeRenderer.bounds;
-
-            // Map the normalized landmark coordinates (0 to 1) to the plane's bounds
-            float x = Mathf.Lerp(planeBounds.min.x, planeBounds.max.x, landmark.x);
-            float y = Mathf.Lerp(planeBounds.min.y, planeBounds.max.y, 1.0f - landmark.y); // Flip Y-axis
-            float z = planeBounds.center.z; // Keep Z constant (on the plane)
-
-            return new Vector3(x, y, z);
-        }
-
-        Debug.LogError("MovementPlaneObject does not have a Renderer component.");
-        return Vector3.zero;
+        return ConstrainToPlane(new Vector3(landmark.x, landmark.y, landmark.z)*10);
     }
 
     /// <summary>
-    /// Constrains a given world position to the bounds of the movement plane.
+    /// Maps a normalized position (0 to 1) to a position on the movement plane.
     /// </summary>
-    /// <param name="position">The world position to constrain.</param>
-    /// <returns>The constrained position on the plane.</returns>
-    private Vector3 ConstrainToPlane(Vector3 position)
+    /// <param name="normalizedPosition">The normalized position (x, y in range 0 to 1).</param>
+    /// <returns>The mapped world position on the plane.</returns>
+    private Vector3 ConstrainToPlane(Vector3 normalizedPosition)
     {
         Renderer planeRenderer = movementPlaneObject.GetComponent<Renderer>();
         if (planeRenderer != null)
         {
             Bounds planeBounds = planeRenderer.bounds;
 
-            // Constrain the position within the plane bounds
-            position.x = Mathf.Clamp(position.x, planeBounds.min.x, planeBounds.max.x);
-            position.y = Mathf.Clamp(position.y, planeBounds.min.y, planeBounds.max.y);
-            position.z = planeBounds.center.z; // Keep Z constant (on the plane)
+            // Map the normalized coordinates (0 to 1) to the plane's bounds
+            float x = Mathf.Lerp(planeBounds.min.x, planeBounds.max.x, normalizedPosition.x);//Mathf.Lerp(planeBounds.min.x, planeBounds.max.x, normalizedPosition.x);
+            float y = Mathf.Lerp(planeBounds.min.y, planeBounds.max.y, 1.0f - normalizedPosition.y); // Flip Y-axis
+            float z = planeBounds.center.z; // Keep Z constant (on the plane)
 
-            return position;
+            return new Vector3(x, y, z);
         }
 
         Debug.LogError("MovementPlaneObject does not have a Renderer component.");
@@ -318,52 +281,42 @@ public class HandPostionTransformer : MonoBehaviour
                 }
             }
 
-            // Draw the midpoint and hand parts 5 and 17 if they exist
-            if (handParts.Count > 17)
+
+            try
             {
-                try
-                {
-                    // Get positions of hand parts 5 and 17
-                    Vector3 position5 = handParts[5].transform.position;
-                    Vector3 position17 = handParts[17].transform.position;
+                // Get positions of hand parts 5 and 17
+                Vector3 position5 = handParts[5].transform.position;
+                Vector3 position17 = handParts[17].transform.position;
 
-                    // Calculate the midpoint
-                    Vector3 midpoint = (position5 + position17) / 2;
+                // Calculate the midpoint
+                Vector3 midpoint = (position5 + position17) / 2;
 
-                    // Draw a sphere for hand part 5
-                    Gizmos.color = Color.blue;
-                    Gizmos.DrawSphere(position5, gizmoSphereSize * 2f); // Larger sphere for visibility
+                // Draw a sphere for hand part 5
+                Gizmos.color = Color.blue;
+                Gizmos.DrawSphere(position5, gizmoSphereSize * 2f); // Larger sphere for visibility
 
-                    // Draw a sphere for hand part 17
-                    Gizmos.color = Color.yellow;
-                    Gizmos.DrawSphere(position17, gizmoSphereSize * 2f); // Larger sphere for visibility
+                // Draw a sphere for hand part 17
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawSphere(position17, gizmoSphereSize * 2f); // Larger sphere for visibility
 
-                    // Draw a sphere for the midpoint
-                    Gizmos.color = Color.magenta;
-                    Gizmos.DrawSphere(midpoint, gizmoSphereSize * 2.5f); // Even larger sphere for the midpoint
+                // Draw a sphere for the midpoint
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawSphere(midpoint, gizmoSphereSize * 2.5f); // Even larger sphere for the midpoint
 
-                    // Draw a line between hand part 5 and 17
-                    Gizmos.color = Color.cyan;
-                    Gizmos.DrawLine(position5, position17);
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogWarning($"Error drawing Gizmo for midpoint: {e.Message}");
-                }
+                // Draw a line between hand part 5 and 17
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawLine(position5, position17);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Error drawing Gizmo for midpoint: {e.Message}");
             }
 
             // Draw the palm position
             if (palmPoint != null)
             {
-                try
-                {
-                    Gizmos.color = Color.white;
-                    Gizmos.DrawSphere(palmPoint.position, gizmoSphereSize * 3f); // Larger sphere for the palm position
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogWarning($"Error drawing Gizmo for palm position: {e.Message}");
-                }
+                Gizmos.color = Color.white;
+                Gizmos.DrawSphere(palmPoint.position, gizmoSphereSize * 3f); // Larger sphere for the palm position
             }
 
             // Draw the bounds of the movement plane
@@ -377,33 +330,26 @@ public class HandPostionTransformer : MonoBehaviour
 
                     // Draw the bounds as a wireframe cube
                     Gizmos.DrawWireCube(planeBounds.center, planeBounds.size);
+
+                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.zero),gizmoSphereSize*5);
+                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.one), gizmoSphereSize * 5);
+                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.right), gizmoSphereSize * 5);
+                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.up), gizmoSphereSize * 5);
+                    Gizmos.DrawSphere(ConstrainToPlane(new Vector3(0.5f,0.5f,0)), gizmoSphereSize * 5);
                 }
             }
 
             // Draw the new position point and movement direction
             if (lastHandPosition != null && landmarkPositions.Count > 0)
             {
-                try
-                {
-                    Vector3 newPosition = landmarkPositions[0];
-                    Gizmos.color = Color.yellow;
+                Gizmos.color = Color.red;
+                Gizmos.DrawLine(lastHandPosition, lastHandPosition + movementDirection * movementMagnitude*10);
+                // Draw the new position as a sphere
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawSphere(lastHandPosition, gizmoSphereSize * 2f);
 
-                    // Draw the new position as a sphere
-                    Gizmos.DrawSphere(newPosition, gizmoSphereSize * 2f);
-
-                    // Draw the movement direction as a line
-                    Gizmos.color = Color.blue;
-                    Gizmos.DrawLine(lastHandPosition, newPosition);
-
-                    // Optionally, draw an arrow to indicate direction
-                    Vector3 direction = (newPosition - lastHandPosition).normalized;
-                    Vector3 arrowHead = newPosition - direction * 0.1f; // Adjust arrow size as needed
-                    Gizmos.DrawLine(newPosition, arrowHead);
-                }
-                catch (System.Exception e)
-                {
-                    Debug.LogWarning($"Error drawing movement direction: {e.Message}");
-                }
+                // Draw the movement direction as a line
+                Gizmos.color = Color.blue;
             }
 
             // Reset color
