@@ -5,12 +5,15 @@ using Mediapipe.Tasks.Components.Containers;
 using System.Linq;
 using UnityEditor;
 using UnityEngine.EventSystems;
+using Mediapipe.Unity;
 
 public class HandPostionTransformer : MonoBehaviour
 {
     [SerializeField]
     HandLandmarkerRunner handLandmarkerRunner;
 
+    [SerializeField]
+    MultiHandLandmarkListAnnotation multiHandLandmarkListAnnotation; 
     [SerializeField]
     GameObject handPartPrefab; // Prefab for hand parts (e.g., cubes)
 
@@ -130,17 +133,18 @@ public class HandPostionTransformer : MonoBehaviour
     {
         if (!startedMoving)
         {
-            lastHandPosition = ConstrainToPlane(handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0].landmarks[0]);
+            lastHandPosition = ConstrainToPlane(multiHandLandmarkListAnnotation.PointZero);
             startedMoving = true;
             return;
         }
 
         // Get the new position from the landmark midpoint
-        Vector3 newPosition = ConstrainToPlane(handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0].landmarks[0]);
+        Vector3 newPosition = ConstrainToPlane(multiHandLandmarkListAnnotation.PointZero);
         Debug.ClearDeveloperConsole();
         movementDirection= newPosition - lastHandPosition;
         movementMagnitude = movementDirection.magnitude;
         movementDirection.Normalize();
+        gameObject.transform.position = newPosition;
         Debug.Log("New postion: " +newPosition + " Old postion: " + lastHandPosition + " Postion from mediapipe: " + handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0].landmarks[0]);
         // Update the last hand position
         lastHandPosition = newPosition;

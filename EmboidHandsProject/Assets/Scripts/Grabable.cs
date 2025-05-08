@@ -16,6 +16,7 @@ public class Grabable : MonoBehaviour
     public float distanceToEndPoint = 0f;
     public float distanceToEndPointThreshold = 1f; // Threshold for distance to endpoint
     Bossman Boss;
+    GameManager gameManager;
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -26,6 +27,8 @@ public class Grabable : MonoBehaviour
         mainCamera = Camera.main;
         EndPoint = GameObject.FindWithTag("EndPoint").transform; // Find the endpoint object by tag
         Boss = GameObject.FindWithTag("Bossman").GetComponent<Bossman>(); // Find
+        gameManager = FindAnyObjectByType<GameManager>();
+
     }
 
     // Update is called once per frame
@@ -94,6 +97,7 @@ public class Grabable : MonoBehaviour
             // Stop the timer and calculate score
             float score = 10 - ((scoreClock*2f) + (distanceToEndPoint*1.5f));
             Debug.Log("Score: " + score + "\n Time taken, distance to endpoint: " + scoreClock + ", " + distanceToEndPoint);
+            gameManager.EndOfRound(score,scoreClock, distanceToEndPoint); 
             Boss.MoveEndPoint(new UnityEngine.Vector3(Random.Range(8,-8), 0.1f,Random.Range(5.5f,-3.5f))); // This should change to be bounds of camera
             Destroy(gameObject);
         }

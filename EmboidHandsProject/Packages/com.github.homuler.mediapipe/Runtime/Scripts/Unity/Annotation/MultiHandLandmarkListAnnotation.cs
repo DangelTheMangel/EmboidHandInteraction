@@ -23,6 +23,12 @@ namespace Mediapipe.Unity
     [SerializeField] private Color _connectionColor = Color.white;
     [SerializeField, Range(0, 1)] private float _connectionWidth = 1.0f;
 
+    // Add a private field to store point zero
+    [SerializeField] private Vector3 _pointZero = Vector3.zero;
+
+    // Add a public property to expose point zero
+    public Vector3 PointZero => _pointZero;
+
 #if UNITY_EDITOR
     private void OnValidate()
     {
@@ -99,7 +105,17 @@ namespace Mediapipe.Unity
       {
         CallActionForAll(targets, (annotation, target) =>
         {
-          if (annotation != null) { annotation.Draw(target, visualizeZ); }
+          if (annotation != null)
+          {
+            annotation.Draw(target, visualizeZ);
+
+            // Save the first landmark point (point zero) if available
+            if (target.Landmark.Count > 0)
+            {
+              var firstLandmark = target.Landmark[0];
+              _pointZero = new Vector3(firstLandmark.X, firstLandmark.Y, firstLandmark.Z);
+            }
+          }
         });
       }
     }
@@ -111,6 +127,12 @@ namespace Mediapipe.Unity
         CallActionForAll(targets, (annotation, target) =>
         {
           if (annotation != null) { annotation.Draw(target, visualizeZ); }
+
+            if (target.landmarks.Count > 0)
+            {
+              var firstLandmark = target.landmarks[0];
+              _pointZero = new Vector3(firstLandmark.x, firstLandmark.y, firstLandmark.z);
+            }
         });
       }
     }
