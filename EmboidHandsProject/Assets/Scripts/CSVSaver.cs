@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using System;
 public class CSVSaver : MonoBehaviour
 {
     private Dictionary<string, List<string>> data = new Dictionary<string, List<string>>();
@@ -65,6 +66,7 @@ public class CSVSaver : MonoBehaviour
     }
 }
 
+[Serializable]
 public enum ControlType
 {
     Mouse,
