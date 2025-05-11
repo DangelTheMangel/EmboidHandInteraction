@@ -9,6 +9,8 @@ public class GameManager : MonoBehaviour
     Bossman bossman;
     CSVSaver csvSaver;
 
+    ExperimentContainer experimentContainer;
+
     [Header("UI Elements")]
     [SerializeField] GameObject startMenu;
     [SerializeField] GameObject endMenu;
@@ -24,6 +26,7 @@ public class GameManager : MonoBehaviour
         csvSaver = FindAnyObjectByType<CSVSaver>();
         objectCompletedText.text = currentObject.ToString() + "/" + maxObjects.ToString();
         startMenu.SetActive(true);
+        experimentContainer = FindAnyObjectByType<ExperimentContainer>();
     }
 
     public void EndOfRound(float score, float time, float distance)
@@ -60,6 +63,13 @@ public class GameManager : MonoBehaviour
     }
 
     public void switchScene(){
-        //
+        if(experimentContainer != null)
+        {
+            experimentContainer.nextScene();
+        }
+        else
+        {
+            Debug.LogError("ExperimentContainer not found");
+        }
     }
 }

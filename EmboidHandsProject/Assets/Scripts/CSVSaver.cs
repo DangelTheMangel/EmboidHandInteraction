@@ -18,6 +18,12 @@ public class CSVSaver : MonoBehaviour
 
     void Start()
     {
+        ExperimentContainer experimentContainer = FindAnyObjectByType<ExperimentContainer>();
+        if (experimentContainer != null)
+        {
+            participantNumber = experimentContainer.participantID;
+        }
+
         filePath = GetSaveFilePath(fileName, participantNumber);
     }
 
