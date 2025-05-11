@@ -124,6 +124,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   handLandmarkerRunner: {fileID: 0}
+  multiHandLandmarkListAnnotation: {fileID: 0}
   handPartPrefab: {fileID: 0}
   handParts:
   - {fileID: 5326149923031779702}
@@ -147,7 +148,18 @@ MonoBehaviour:
   - {fileID: 6709541505267069729}
   - {fileID: 59966683516604388}
   - {fileID: 7775287943196868824}
-  lineRenderer: {fileID: 7331575265613636719}
+  scale: {x: 1, y: 1, z: 1}
+  palmPoint: {fileID: 0}
+  roationAddition: {x: 0, y: 0, z: 0}
+  handmodel: {fileID: 0}
+  rotateWrist: 0
+  handCanMove: 0
+  gizmoSphereSize: 0.01
+  movementSpeed: 10
+  movementPlaneObject: {fileID: 0}
+  useTeleport: 0
+  lastHandPosition: {x: 0, y: 0, z: 0}
+  movementDirection: {x: 0, y: 0, z: 0}
 --- !u!120 &7331575265613636719
 LineRenderer:
   serializedVersion: 2
@@ -315,6 +327,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7009038412992213568, guid: 6ccdafde9ad7ba14aac4d5f5a159872d, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 52df93a94026c604fa7d2600a4e59de9, type: 2}
     - target: {fileID: 919132149155446097, guid: 6ccdafde9ad7ba14aac4d5f5a159872d, type: 3}
       propertyPath: m_Name
       value: LeftHand
