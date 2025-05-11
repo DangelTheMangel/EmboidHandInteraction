@@ -161,9 +161,9 @@ public class HandPostionTransformer : MonoBehaviour
     }
 
     /// <summary>
-    /// Maps a normalized position (0 to 1) to a position on the movement plane.
+    /// Maps a normalized position (0 to 1) to a position on the movement plane, using the X and Z axes.
     /// </summary>
-    /// <param name="normalizedPosition">The normalized position (x, y in range 0 to 1).</param>
+    /// <param name="normalizedPosition">The normalized position (x, z in range 0 to 1).</param>
     /// <returns>The mapped world position on the plane.</returns>
     private Vector3 ConstrainToPlane(Vector3 normalizedPosition)
     {
@@ -173,9 +173,9 @@ public class HandPostionTransformer : MonoBehaviour
             Bounds planeBounds = planeRenderer.bounds;
 
             // Map the normalized coordinates (0 to 1) to the plane's bounds
-            float x = Mathf.Lerp(planeBounds.min.x, planeBounds.max.x, normalizedPosition.x);//Mathf.Lerp(planeBounds.min.x, planeBounds.max.x, normalizedPosition.x);
-            float y = Mathf.Lerp(planeBounds.min.y, planeBounds.max.y, 1.0f - normalizedPosition.y); // Flip Y-axis
-            float z = planeBounds.center.z; // Keep Z constant (on the plane)
+            float x = Mathf.Lerp(planeBounds.min.x, planeBounds.max.x, normalizedPosition.x);
+            float z = Mathf.Lerp(planeBounds.min.z, planeBounds.max.z, 1.0f - normalizedPosition.y); // Flip Y-axis for Z mapping
+            float y = planeBounds.center.y; // Keep Y constant (on the plane)
 
             return new Vector3(x, y, z);
         }
@@ -220,7 +220,7 @@ public class HandPostionTransformer : MonoBehaviour
         Vector3 midpoint = transform.position;
 
         // Adjust the landmark position relative to the midpoint
-        return midpoint + new Vector3(-landmark.x * scale.x, -landmark.y * scale.y, -landmark.z * scale.z);
+        return midpoint + new Vector3(-landmark.x*-1 * scale.x, -landmark.z*-1 * scale.y, -landmark.y * scale.z);
     }
 
     void OnDrawGizmos()
@@ -335,11 +335,13 @@ public class HandPostionTransformer : MonoBehaviour
                     // Draw the bounds as a wireframe cube
                     Gizmos.DrawWireCube(planeBounds.center, planeBounds.size);
 
-                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.zero),gizmoSphereSize*5);
-                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.one), gizmoSphereSize * 5);
-                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.right), gizmoSphereSize * 5);
-                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.up), gizmoSphereSize * 5);
-                    Gizmos.DrawSphere(ConstrainToPlane(new Vector3(0.5f,0.5f,0)), gizmoSphereSize * 5);
+                    // Test points for X and Z mapping
+                    Gizmos.color = Color.red;
+                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.zero), gizmoSphereSize * 5); // Bottom-left corner
+                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.one), gizmoSphereSize * 5); // Top-right corner
+                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.right), gizmoSphereSize * 5); // Bottom-right corner
+                    Gizmos.DrawSphere(ConstrainToPlane(Vector3.up), gizmoSphereSize * 5); // Top-left corner
+                    Gizmos.DrawSphere(ConstrainToPlane(new Vector3(0.5f, 0.5f, 0)), gizmoSphereSize * 5); // Center
                 }
             }
 
@@ -347,13 +349,11 @@ public class HandPostionTransformer : MonoBehaviour
             if (lastHandPosition != null && landmarkPositions.Count > 0)
             {
                 Gizmos.color = Color.red;
-                Gizmos.DrawLine(lastHandPosition, lastHandPosition + movementDirection * movementMagnitude*10);
+                Gizmos.DrawLine(lastHandPosition, lastHandPosition + movementDirection * movementMagnitude * 10);
+
                 // Draw the new position as a sphere
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawSphere(lastHandPosition, gizmoSphereSize * 2f);
-
-                // Draw the movement direction as a line
-                Gizmos.color = Color.blue;
             }
 
             // Reset color
