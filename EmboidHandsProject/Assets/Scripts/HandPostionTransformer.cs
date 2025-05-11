@@ -230,6 +230,8 @@ public class HandPostionTransformer : MonoBehaviour
     [SerializeField] internal float grabThreshold = 1f;
     [SerializeField] internal Vector3 boxCastSize = new Vector3(0.05f, 0.05f, 0.05f); // Size of the box cast
     bool isGrabbing = false;
+
+    int lastFingerIndex = -1; 
     void FixedUpdate()
     {
         float smallestDistance = float.MaxValue;
@@ -261,6 +263,7 @@ public class HandPostionTransformer : MonoBehaviour
                         grabable = hit.collider.GetComponent<Grabable>();
                         if (grabable != null)
                         {
+                            lastFingerIndex = i;
                             Debug.Log("Grabable object detected: " + grabable.name);
                             grabable.SetGrabbed(true,this);
                             isGrabbing = true;
@@ -272,10 +275,17 @@ public class HandPostionTransformer : MonoBehaviour
         if(isGrabbing && smallestDistance > grabThreshold){
             grabable.SetGrabbed(false,this);
             isGrabbing = false;
+            lastFingerIndex = -1; 
         }
     }
 
     public Vector3 getHandPosition(){
+        if(lastFingerIndex >-1){
+            Vector3 orgin =  handParts[fingerEndpoints[lastFingerIndex]].transform.position + handParts[4].transform.position;
+            orgin /= 2;
+            orgin.y = movementPlaneObject.transform.position.y;
+            return orgin;
+        }
         return palmPoint.position;
     }
 
