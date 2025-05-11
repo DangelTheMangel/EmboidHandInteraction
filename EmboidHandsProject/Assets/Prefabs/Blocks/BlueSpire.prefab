@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4106995211904068714}
   - component: {fileID: 4262096687203320402}
   - component: {fileID: 3530076886855911088}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: BlueSpire
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -153,3 +153,5 @@ MonoBehaviour:
   EndPoint: {fileID: 0}
   distanceToEndPoint: 0
   distanceToEndPointThreshold: 1
+  HandTracking: 0
+  handPostion: {fileID: 0}

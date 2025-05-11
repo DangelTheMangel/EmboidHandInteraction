@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2781092793656978464}
   - component: {fileID: 1440814418132233071}
   - component: {fileID: 4151391841852271709}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: GreenCylinder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -153,3 +153,5 @@ MonoBehaviour:
   EndPoint: {fileID: 0}
   distanceToEndPoint: 0
   distanceToEndPointThreshold: 1
+  HandTracking: 0
+  handPostion: {fileID: 0}

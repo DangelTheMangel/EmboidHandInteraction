@@ -10,6 +10,8 @@ using Mediapipe.Unity;
 public class HandPostionTransformer : MonoBehaviour
 {
     [SerializeField]
+    LayerMask layerMask_grabable;
+    [SerializeField]
     HandLandmarkerRunner handLandmarkerRunner;
 
     [SerializeField]
@@ -145,7 +147,7 @@ public class HandPostionTransformer : MonoBehaviour
         movementMagnitude = movementDirection.magnitude;
         movementDirection.Normalize();
         gameObject.transform.position = newPosition;
-        Debug.Log("New postion: " +newPosition + " Old postion: " + lastHandPosition + " Postion from mediapipe: " + handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0].landmarks[0]);
+        //Debug.Log("New postion: " +newPosition + " Old postion: " + lastHandPosition + " Postion from mediapipe: " + handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0].landmarks[0]);
         // Update the last hand position
         lastHandPosition = newPosition;
     }
@@ -199,14 +201,82 @@ public class HandPostionTransformer : MonoBehaviour
         Vector3 wristPosition = handParts[0].transform.position;
         Vector3 direction = (midpoint - wristPosition).normalized;
 
-        // Calculate the rotation without affecting the local Y-axis rotation
-        Quaternion lookRotation = Quaternion.LookRotation(direction, Vector3.up);
+        // Calculate the midpoint of all the fingertips
+        Vector3 fingertipsMidpoint = Vector3.zero;
+        int fingertipCount = 0;
+
+        foreach (int index in fingerEndpoints)
+        {
+            if (index < handParts.Count && handParts[index] != null)
+            {
+            fingertipsMidpoint += handParts[index].transform.position;
+            fingertipCount++;
+            }
+        }
+
+        if (fingertipCount > 0)
+        {
+            fingertipsMidpoint /= fingertipCount; // Average the positions
+        }
 
         // Calculate the centroid of the triangle formed by position5, position17, and wristPosition
         Vector3 palmPosition = (position5 + position17 + wristPosition) / 3f;
         palmPoint.position = palmPosition;
-        palmPoint.rotation = Quaternion.Euler(lookRotation.eulerAngles.x, palmPoint.rotation.eulerAngles.y, lookRotation.eulerAngles.z);
+        palmPoint.rotation = Quaternion.LookRotation(direction, (palmPoint.position- fingertipsMidpoint)) * Quaternion.Euler(roationAddition); 
 
+
+    }
+    [SerializeField] Grabable grabable;
+    [SerializeField] internal float grabThreshold = 1f;
+    [SerializeField] internal Vector3 boxCastSize = new Vector3(0.05f, 0.05f, 0.05f); // Size of the box cast
+    bool isGrabbing = false;
+    void FixedUpdate()
+    {
+        float smallestDistance = float.MaxValue;
+        for (int i = 1; i < fingerEndpoints.Length; i++)
+        {
+            int fingertipIndex = fingerEndpoints[i];
+            float distance = Vector3.Distance(handParts[fingertipIndex].transform.position, handParts[4].transform.position);
+            if (distance < smallestDistance)
+            {
+                smallestDistance = distance;
+            }
+            if (distance <= grabThreshold)
+            {
+                if(!isGrabbing){
+                    // Perform a box cast to detect a Grabable object
+                    Vector3 origin = handParts[fingertipIndex].transform.position + handParts[4].transform.position;
+                    origin /= 2;
+                    origin.y = movementPlaneObject.transform.position.y;
+                    Vector3 halfExtents = boxCastSize;
+                    Quaternion orientation = Quaternion.identity;
+                    Vector3 direction = (handParts[4].transform.position - origin).normalized;
+
+
+                    RaycastHit hit;
+                    if (Physics.SphereCast(origin, boxCastSize.x / 2, direction, out hit, boxCastSize.x, layerMask_grabable))
+                    {
+                        // Check if the hit object is a Grabable object
+                        Debug.Log("Hit detected: " + hit.collider.name);
+                        grabable = hit.collider.GetComponent<Grabable>();
+                        if (grabable != null)
+                        {
+                            Debug.Log("Grabable object detected: " + grabable.name);
+                            grabable.SetGrabbed(true,this);
+                            isGrabbing = true;
+                        }
+                    }
+                }
+            }
+        }
+        if(isGrabbing && smallestDistance > grabThreshold){
+            grabable.SetGrabbed(false,this);
+            isGrabbing = false;
+        }
+    }
+
+    public Vector3 getHandPosition(){
+        return palmPoint.position;
     }
 
     /// <summary>
@@ -285,35 +355,57 @@ public class HandPostionTransformer : MonoBehaviour
                 }
             }
 
-
-            try
+            // Draw Gizmos for FixedUpdate logic
+            if (handParts.Count > 4) // Ensure the thumb (index 4) exists
             {
-                // Get positions of hand parts 5 and 17
-                Vector3 position5 = handParts[5].transform.position;
-                Vector3 position17 = handParts[17].transform.position;
+                float smallestDistance = float.MaxValue; // Track the smallest distance
+                Vector3 sphereCastOrigin = Vector3.zero; // Track the origin of the sphere cast
+                Vector3 sphereCastDirection = Vector3.zero; // Track the direction of the sphere cast
 
-                // Calculate the midpoint
-                Vector3 midpoint = (position5 + position17) / 2;
+                for (int i = 1; i < fingerEndpoints.Length; i++)
+                {
+                    int fingertipIndex = fingerEndpoints[i];
+                    if (fingertipIndex < handParts.Count && handParts[fingertipIndex] != null)
+                    {
+                        Vector3 fingertipPosition = handParts[fingertipIndex].transform.position;
+                        Vector3 thumbPosition = handParts[4].transform.position;
 
-                // Draw a sphere for hand part 5
-                Gizmos.color = Color.blue;
-                Gizmos.DrawSphere(position5, gizmoSphereSize * 2f); // Larger sphere for visibility
+                        // Calculate the distance between the fingertip and the thumb
+                        float distance = Vector3.Distance(fingertipPosition, thumbPosition);
 
-                // Draw a sphere for hand part 17
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawSphere(position17, gizmoSphereSize * 2f); // Larger sphere for visibility
+                        // Update the smallest distance and sphere cast parameters
+                        if (distance < smallestDistance)
+                        {
+                            smallestDistance = distance;
+                            sphereCastOrigin = fingertipPosition;
+                            sphereCastDirection = (thumbPosition - fingertipPosition).normalized;
+                        }
 
-                // Draw a sphere for the midpoint
-                Gizmos.color = Color.magenta;
-                Gizmos.DrawSphere(midpoint, gizmoSphereSize * 2.5f); // Even larger sphere for the midpoint
+                        // Change the line color based on the distance
+                        if (distance < grabThreshold)
+                        {
+                            Gizmos.color = Color.yellow;
+                        }
+                        else
+                        {
+                            Gizmos.color = Color.cyan;
+                        }
 
-                // Draw a line between hand part 5 and 17
-                Gizmos.color = Color.cyan;
-                Gizmos.DrawLine(position5, position17);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Error drawing Gizmo for midpoint: {e.Message}");
+                        // Draw a line between the fingertip and the thumb
+                        Gizmos.DrawLine(fingertipPosition, thumbPosition);
+
+                        // Draw a sphere at the fingertip position
+                        Gizmos.color = Color.blue;
+                        Gizmos.DrawSphere(fingertipPosition, gizmoSphereSize * 2f);
+                    }
+                }
+
+                // Draw the sphere cast if the smallest distance is less than the grab threshold
+                if (smallestDistance < grabThreshold)
+                {
+                    Gizmos.color = Color.magenta; // Color for the sphere cast
+                    Gizmos.DrawWireSphere(sphereCastOrigin, boxCastSize.x/2); // Draw the sphere cast
+                }
             }
 
             // Draw the palm position

@@ -5,7 +5,7 @@ using UnityEngine;
 public class Grabable : MonoBehaviour
 {
     Rigidbody rb;
-    private bool isGrabbed = false;
+    [SerializeField]private bool isGrabbed = false;
     private Camera mainCamera;
     private float baseMaxLinearVelocity = 10f;
     private float baseMaxAngularVelocity = 10f;
@@ -17,6 +17,7 @@ public class Grabable : MonoBehaviour
     public float distanceToEndPointThreshold = 1f; // Threshold for distance to endpoint
     Bossman Boss;
     GameManager gameManager;
+    [SerializeField] private bool HandTracking = false; // Flag to check if hand tracking is enabled
     
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -30,45 +31,72 @@ public class Grabable : MonoBehaviour
         gameManager = FindAnyObjectByType<GameManager>();
 
     }
+    [SerializeField] HandPostionTransformer handPostion;
+    public void SetGrabbed(bool grabbed , HandPostionTransformer handPostionTransformer)
+    {
+        HandTracking = true;
+        isGrabbed = grabbed;
+        handPostion = handPostionTransformer;
+        Debug.Log("Hand set to: " + handPostion);
+    }
 
     // Update is called once per frame
     void Update()
     {
 
         #region Dragging
-        if (Input.GetMouseButtonDown(0)) // Left mouse button pressed
-        {
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
+        if(!HandTracking){
+            if (Input.GetMouseButtonDown(0)) // Left mouse button pressed
             {
-                if (hit.collider.gameObject == gameObject)
+                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out RaycastHit hit))
                 {
-                    isGrabbed = true;
+                    if (hit.collider.gameObject == gameObject)
+                    {
+                        isGrabbed = true;
+                    }
                 }
             }
-        }
 
-        if (Input.GetMouseButtonUp(0)) // Left mouse button released
-        {
-            isGrabbed = false;
+            if (Input.GetMouseButtonUp(0)) // Left mouse button released
+            {
+                isGrabbed = false;
+            }
         }
+        
 
         if (isGrabbed)
         {
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
+            if(handPostion != null)
             {
-                UnityEngine.Vector3 targetPosition = new UnityEngine.Vector3(hit.point.x, 1, hit.point.z);
+                Debug.Log("Hand Position_: " + handPostion.getHandPosition());
+                UnityEngine.Vector3 targetPosition = handPostion.getHandPosition();
                 UnityEngine.Vector3 direction = targetPosition - transform.position;
-
-                // Adjust velocities based on distance
+                
                 float distance = direction.magnitude;
                 rb.maxLinearVelocity = baseMaxLinearVelocity + distance * 0.5f;
                 rb.maxAngularVelocity = baseMaxAngularVelocity + distance * 0.5f;
-
-                // Move the object towards the target position
                 rb.linearVelocity = direction * 10f; // Adjust speed as needed
             }
+            else
+            {
+                Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out RaycastHit hit))
+                {
+                    Debug.Log("Hit: " + hit.collider.gameObject.name);
+                    UnityEngine.Vector3 targetPosition = new UnityEngine.Vector3(hit.point.x, 1, hit.point.z);
+                    UnityEngine.Vector3 direction = targetPosition - transform.position;
+
+                    // Adjust velocities based on distance
+                    float distance = direction.magnitude;
+                    rb.maxLinearVelocity = baseMaxLinearVelocity + distance * 0.5f;
+                    rb.maxAngularVelocity = baseMaxAngularVelocity + distance * 0.5f;
+
+                    // Move the object towards the target position
+                    rb.linearVelocity = direction * 10f; // Adjust speed as needed
+                }
+            }
+            
         }
 
         // Check if the object is outside the camera's bounds

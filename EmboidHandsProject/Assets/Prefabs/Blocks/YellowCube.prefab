@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2552830649457670810}
   - component: {fileID: 1648002101889304680}
   - component: {fileID: 7520958036686867271}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: YellowCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -126,6 +126,8 @@ MonoBehaviour:
   EndPoint: {fileID: 0}
   distanceToEndPoint: 0
   distanceToEndPointThreshold: 1
+  HandTracking: 0
+  handPostion: {fileID: 0}
 --- !u!54 &7520958036686867271
 Rigidbody:
   m_ObjectHideFlags: 0
