@@ -1,21 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
-
+/// <summary>
+/// This class is responsible for spawning and moving objects in the game.
+/// It manages a list of grabable objects and allows spawning them at a specified point.
+/// </summary>
 public class Bossman : MonoBehaviour
 {
     public List<GameObject> grabableObjects = new List<GameObject>();
     public GameObject spawnPoint;
     public GameObject endPoint;
 
-    // Update is called once per frame
-    void Update()
-    {
-        /*if(Input.GetKeyDown(KeyCode.G))
-        {
-            SpawnShape();
-        }*/
-    }
-
+    /// <summary>
+    /// Spawns a random object from the list of grabable objects at the spawn point.
+    /// </summary>
     public void SpawnShape()
     {
         GameObject newObject = GameObject.Instantiate(
@@ -23,23 +20,16 @@ public class Bossman : MonoBehaviour
             spawnPoint.transform.position, 
             spawnPoint.transform.rotation
         );
-
-        // Set a random scale for the new object
-        float randomScale = Random.Range(0.5f, 2.0f); // Adjust the range as needed
+        float randomScale = Random.Range(0.5f, 2.0f);
         newObject.transform.localScale = new Vector3(randomScale, randomScale, randomScale);
     }
 
-
+    /// <summary>
+    /// Moves the spawn point to a new position.
+    /// </summary>
+    /// <param name="newPosition"></param>
     public void MoveEndPoint(UnityEngine.Vector3 newPosition)
     {
         endPoint.transform.position = newPosition;
     }
 }
-
-
-//Start time taking
-//Register when object close
-//Set timer for 1sec as long as withing ray thereshold
-//when timer is up give score, and store score
-//Stop time taking
-//Score is = Time taken, distance to endpoint

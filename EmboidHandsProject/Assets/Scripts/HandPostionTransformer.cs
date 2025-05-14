@@ -9,49 +9,112 @@ using Mediapipe.Unity;
 
 public class HandPostionTransformer : MonoBehaviour
 {
+ // General Settings
+    [Header("General Settings")]
+    [Tooltip("Layer mask for objects that can be grabbed.")]
     [SerializeField]
     LayerMask layerMask_grabable;
+
+    [Tooltip("Reference to the HandLandmarkerRunner for hand tracking.")]
     [SerializeField]
     HandLandmarkerRunner handLandmarkerRunner;
 
+    [Tooltip("Annotation for visualizing hand landmarks.")]
     [SerializeField]
-    MultiHandLandmarkListAnnotation multiHandLandmarkListAnnotation; 
-    [SerializeField]
-    GameObject handPartPrefab; // Prefab for hand parts (e.g., cubes)
+    MultiHandLandmarkListAnnotation multiHandLandmarkListAnnotation;
 
+    [Tooltip("Prefab for individual hand parts.")]
     [SerializeField]
-    private List<GameObject> handParts = new List<GameObject>(); // List to store instantiated hand parts
+    GameObject handPartPrefab;
 
-    [SerializeField] public Vector3 scale = new Vector3(1, 1, 1); // Scale factor for hand parts
+    // Hand Parts
+    [Header("Hand Parts")]
+    [Tooltip("List of GameObjects representing the hand parts.")]
+    [SerializeField]
+    private List<GameObject> handParts = new List<GameObject>();
+
+    [Tooltip("Scale of the hand model.")]
+    [SerializeField]
+    public Vector3 scale = new Vector3(1, 1, 1);
+
+    [Tooltip("Transform representing the palm point.")]
     public Transform palmPoint;
-    private List<Vector3> landmarkPositions = new List<Vector3>(); // Store landmark positions for Gizmos
 
-    private readonly int[] fingerEndpoints = { 4, 8, 12, 16, 20 }; // Indices of finger endpoints
-    public Vector3 roationAddition = new Vector3(0, 0, 0); // Rotation offset for hand parts
+    [Tooltip("Prefab for the hand model.")]
     public GameObject handmodel;
 
-    public bool rotateWrist = false, handCanMove = false; // Flags for wrist rotation and hand movement
-
-    [SerializeField]
-    private float gizmoSphereSize = 0.01f; // Variable to control the size of all Gizmo spheres
-
+    // Movement Settings
+    [Header("Movement Settings")]
+    [Tooltip("Speed of hand movement.")]
     public float movementSpeed = 10;
+
+    [Tooltip("GameObject representing the movement plane.")]
     public GameObject movementPlaneObject;
 
+    [Tooltip("Enable or disable teleportation for hand movement.")]
     [SerializeField]
-    private bool useTeleport = false; // Boolean to toggle teleportation
+    private bool useTeleport = false;
 
+    [Tooltip("Last recorded position of the hand.")]
+    public Vector3 lastHandPosition;
+
+    [Tooltip("Direction of hand movement.")]
+    public Vector3 movementDirection = Vector3.zero;
+
+    [Tooltip("Magnitude of hand movement.")]
+    float movementMagnitude = 0;
+
+    // Rotation Settings
+    [Header("Rotation Settings")]
+    [Tooltip("Additional rotation to apply to the hand.")]
+    public Vector3 roationAddition = new Vector3(0, 0, 0);
+
+    [Tooltip("Enable or disable wrist rotation.")]
+    public bool rotateWrist = false;
+
+    // Grabbing Settings
+    [Header("Grabbing Settings")]
+    [Tooltip("Threshold distance for grabbing objects.")]
+    [SerializeField]
+    internal float grabThreshold = 1f;
+
+    [Tooltip("Size of the box cast for detecting grabable objects.")]
+    [SerializeField]
+    internal Vector3 boxCastSize = new Vector3(0.05f, 0.05f, 0.05f);
+
+    [Tooltip("Reference to the currently grabbed object.")]
+    [SerializeField]
+    Grabable grabable;
+
+    // Debug and Gizmos
+    [Header("Debug and Gizmos")]
+    [Tooltip("Size of the gizmo spheres.")]
+    [SerializeField]
+    private float gizmoSphereSize = 0.01f;
+
+    [Tooltip("Enable or disable hand movement.")]
+    public bool handCanMove = false;
+
+    // Internal Variables
+    private List<Vector3> landmarkPositions = new List<Vector3>();
+    private readonly int[] fingerEndpoints = { 4, 8, 12, 16, 20 };
+    private bool startedMoving = false;
+    private bool isGrabbing = false;
+    private int lastFingerIndex = -1;
+
+    /// <summary>
+    /// Initializes the hand model and sets its scale based on the assigned hand model.
+    /// It also sets the last hand position to a default value.
+    /// </summary>
     void Start()
     {
         if (handmodel != null)
         {
-            // Combine the scale of the handmodel and the parent GameObject
             scale = new Vector3(
                 handmodel.transform.localScale.x * transform.localScale.x,
                 handmodel.transform.localScale.y * transform.localScale.y,
                 handmodel.transform.localScale.z * transform.localScale.z
             );
-
             Debug.Log(handmodel.transform.localScale + " " + transform.localScale + " " + scale);
         }
         else
@@ -59,8 +122,13 @@ public class HandPostionTransformer : MonoBehaviour
             Debug.LogWarning("Handmodel is not assigned. Using default scale.");
         }
 
-        lastHandPosition = ConstrainToPlane(new Vector3(0.5f, 0.5f, 0.5f)); // Initialize last hand position
+        lastHandPosition = ConstrainToPlane(new Vector3(0.5f, 0.5f, 0.5f));
     }
+
+    /// <summary>
+    /// Updates the positions and rotations of hand parts based on the hand landmark results.
+    /// It also handles the movement and rotation of the hand model.
+    /// </summary>
     void Update()
     {
         try
@@ -75,18 +143,12 @@ public class HandPostionTransformer : MonoBehaviour
             {
                 var handLandmark = handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0];
                 var landmarks = handLandmark.landmarks;
-
-                // Clear previous landmark positions
                 landmarkPositions.Clear();
-
-                // Update local positions of hand parts
                 for (int i = 0; i < landmarks.Count; i++)
                 {
                     try
                     {
                         var landmark = landmarks[i];
-
-                        // Convert landmark to world position
                         Vector3 newpos = LandmarkToWorldPosition(landmark);
                         landmarkPositions.Add(newpos);
 
@@ -105,7 +167,7 @@ public class HandPostionTransformer : MonoBehaviour
                             {
                                 Vector3 direction = (LandmarkToWorldPosition(landmarks[i + 1]) - handParts[i].transform.position).normalized;
                                 Quaternion rotation = Quaternion.LookRotation(direction, Vector3.up);
-                                handParts[i].transform.rotation = rotation * Quaternion.Euler(roationAddition); // Apply rotation and offset
+                                handParts[i].transform.rotation = rotation * Quaternion.Euler(roationAddition);
                             }
                         }
                     }
@@ -126,11 +188,11 @@ public class HandPostionTransformer : MonoBehaviour
             Debug.LogWarning($"Error in Update: {e.Message}");
         }
     }
-    public Vector3 lastHandPosition;
-    bool startedMoving = false;
 
-    public Vector3 movementDirection = Vector3.zero; // Direction of movement
-    float movementMagnitude = 0; // Magnitude of movement
+    /// <summary>
+    /// Moves the hand model based on the position of the hand landmark.
+    /// It updates the last hand position and calculates the movement direction and magnitude.
+    /// </summary>
     private void moveHand()
     {
         if (!startedMoving)
@@ -147,8 +209,6 @@ public class HandPostionTransformer : MonoBehaviour
         movementMagnitude = movementDirection.magnitude;
         movementDirection.Normalize();
         gameObject.transform.position = newPosition;
-        //Debug.Log("New postion: " +newPosition + " Old postion: " + lastHandPosition + " Postion from mediapipe: " + handLandmarkerRunner.handLandmarkerResult.handWorldLandmarks[0].landmarks[0]);
-        // Update the last hand position
         lastHandPosition = newPosition;
     }
 
@@ -191,12 +251,9 @@ public class HandPostionTransformer : MonoBehaviour
     /// </summary>
     private void RotateWristTowardsMidpoint()
     {
-
-        // Get positions of hand parts 5 and 17
         Vector3 position5 = handParts[5].transform.position;
         Vector3 position17 = handParts[17].transform.position;
 
-        // Calculate the midpoint
         Vector3 midpoint = (position5 + position17) / 2;
         Vector3 wristPosition = handParts[0].transform.position;
         Vector3 direction = (midpoint - wristPosition).normalized;
@@ -216,22 +273,19 @@ public class HandPostionTransformer : MonoBehaviour
 
         if (fingertipCount > 0)
         {
-            fingertipsMidpoint /= fingertipCount; // Average the positions
+            fingertipsMidpoint /= fingertipCount;
         }
-
-        // Calculate the centroid of the triangle formed by position5, position17, and wristPosition
         Vector3 palmPosition = (position5 + position17 + wristPosition) / 3f;
         palmPoint.position = palmPosition;
         palmPoint.rotation = Quaternion.LookRotation(direction, (palmPoint.position- fingertipsMidpoint)) * Quaternion.Euler(roationAddition); 
 
 
     }
-    [SerializeField] Grabable grabable;
-    [SerializeField] internal float grabThreshold = 1f;
-    [SerializeField] internal Vector3 boxCastSize = new Vector3(0.05f, 0.05f, 0.05f); // Size of the box cast
-    bool isGrabbing = false;
 
-    int lastFingerIndex = -1; 
+    /// <summary>
+    /// Checks for collisions with grabable objects using a sphere cast.
+    /// If a grabable object is detected within the grab threshold, it sets the object as grabbed.
+    /// </summary>
     void FixedUpdate()
     {
         float smallestDistance = float.MaxValue;
@@ -246,7 +300,6 @@ public class HandPostionTransformer : MonoBehaviour
             if (distance <= grabThreshold)
             {
                 if(!isGrabbing){
-                    // Perform a box cast to detect a Grabable object
                     Vector3 origin = handParts[fingertipIndex].transform.position + handParts[4].transform.position;
                     origin /= 2;
                     origin.y = movementPlaneObject.transform.position.y;
@@ -279,6 +332,11 @@ public class HandPostionTransformer : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Returns the position of the hand based on the last finger index.
+    /// If no finger is detected, it returns the palm point position.
+    /// </summary>
+    /// <returns></returns>
     public Vector3 getHandPosition(){
         if(lastFingerIndex >-1){
             Vector3 orgin =  handParts[fingerEndpoints[lastFingerIndex]].transform.position + handParts[4].transform.position;
@@ -307,7 +365,6 @@ public class HandPostionTransformer : MonoBehaviour
     {
         try
         {
-            // Draw Gizmos for each hand part
             Gizmos.color = Color.green;
 
             for (int i = 0; i < handParts.Count; i++)
@@ -320,14 +377,8 @@ public class HandPostionTransformer : MonoBehaviour
                         {
                             continue;
                         }
-
-                        // Calculate sphere size based on local scale and gizmoSphereSize
                         float sphereSize = gizmoSphereSize * handParts[i].transform.localScale.magnitude;
-
-                        // Draw a sphere at each hand part's position
                         Gizmos.DrawSphere(handParts[i].transform.position, sphereSize);
-
-                        // Draw a line to the next hand part if it exists
                         if (i < handParts.Count - 1 && handParts[i + 1] != null)
                         {
                             Gizmos.DrawLine(handParts[i].transform.position, handParts[i + 1].transform.position);
@@ -366,11 +417,11 @@ public class HandPostionTransformer : MonoBehaviour
             }
 
             // Draw Gizmos for FixedUpdate logic
-            if (handParts.Count > 4) // Ensure the thumb (index 4) exists
+            if (handParts.Count > 4) 
             {
-                float smallestDistance = float.MaxValue; // Track the smallest distance
-                Vector3 sphereCastOrigin = Vector3.zero; // Track the origin of the sphere cast
-                Vector3 sphereCastDirection = Vector3.zero; // Track the direction of the sphere cast
+                float smallestDistance = float.MaxValue;
+                Vector3 sphereCastOrigin = Vector3.zero;
+                Vector3 sphereCastDirection = Vector3.zero;
 
                 for (int i = 1; i < fingerEndpoints.Length; i++)
                 {
@@ -379,19 +430,13 @@ public class HandPostionTransformer : MonoBehaviour
                     {
                         Vector3 fingertipPosition = handParts[fingertipIndex].transform.position;
                         Vector3 thumbPosition = handParts[4].transform.position;
-
-                        // Calculate the distance between the fingertip and the thumb
                         float distance = Vector3.Distance(fingertipPosition, thumbPosition);
-
-                        // Update the smallest distance and sphere cast parameters
                         if (distance < smallestDistance)
                         {
                             smallestDistance = distance;
                             sphereCastOrigin = fingertipPosition;
                             sphereCastDirection = (thumbPosition - fingertipPosition).normalized;
                         }
-
-                        // Change the line color based on the distance
                         if (distance < grabThreshold)
                         {
                             Gizmos.color = Color.yellow;
@@ -400,32 +445,22 @@ public class HandPostionTransformer : MonoBehaviour
                         {
                             Gizmos.color = Color.cyan;
                         }
-
-                        // Draw a line between the fingertip and the thumb
                         Gizmos.DrawLine(fingertipPosition, thumbPosition);
-
-                        // Draw a sphere at the fingertip position
                         Gizmos.color = Color.blue;
                         Gizmos.DrawSphere(fingertipPosition, gizmoSphereSize * 2f);
                     }
                 }
-
-                // Draw the sphere cast if the smallest distance is less than the grab threshold
                 if (smallestDistance < grabThreshold)
                 {
-                    Gizmos.color = Color.magenta; // Color for the sphere cast
-                    Gizmos.DrawWireSphere(sphereCastOrigin, boxCastSize.x/2); // Draw the sphere cast
+                    Gizmos.color = Color.magenta;
+                    Gizmos.DrawWireSphere(sphereCastOrigin, boxCastSize.x/2);
                 }
             }
-
-            // Draw the palm position
             if (palmPoint != null)
             {
                 Gizmos.color = Color.white;
-                Gizmos.DrawSphere(palmPoint.position, gizmoSphereSize * 3f); // Larger sphere for the palm position
+                Gizmos.DrawSphere(palmPoint.position, gizmoSphereSize * 3f);
             }
-
-            // Draw the bounds of the movement plane
             if (movementPlaneObject != null)
             {
                 Renderer planeRenderer = movementPlaneObject.GetComponent<Renderer>();
@@ -433,11 +468,7 @@ public class HandPostionTransformer : MonoBehaviour
                 {
                     Gizmos.color = Color.green;
                     Bounds planeBounds = planeRenderer.bounds;
-
-                    // Draw the bounds as a wireframe cube
                     Gizmos.DrawWireCube(planeBounds.center, planeBounds.size);
-
-                    // Test points for X and Z mapping
                     Gizmos.color = Color.red;
                     Gizmos.DrawSphere(ConstrainToPlane(Vector3.zero), gizmoSphereSize * 5); // Bottom-left corner
                     Gizmos.DrawSphere(ConstrainToPlane(Vector3.one), gizmoSphereSize * 5); // Top-right corner
@@ -447,18 +478,14 @@ public class HandPostionTransformer : MonoBehaviour
                 }
             }
 
-            // Draw the new position point and movement direction
             if (lastHandPosition != null && landmarkPositions.Count > 0)
             {
                 Gizmos.color = Color.red;
                 Gizmos.DrawLine(lastHandPosition, lastHandPosition + movementDirection * movementMagnitude * 10);
-
-                // Draw the new position as a sphere
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawSphere(lastHandPosition, gizmoSphereSize * 2f);
             }
 
-            // Reset color
             Gizmos.color = Color.green;
         }
         catch (System.Exception e)
